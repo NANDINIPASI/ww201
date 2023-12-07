@@ -1,48 +1,55 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
-const argv = require('minimist')(process.argv.slice(2));
+const http = require("http");
+const fs = require("fs");
 
-const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
-  const pathname = parsedUrl.pathname;
-
-  if (pathname === '/home.html') {
-    const homePath = path.join(__dirname, 'home.html');
-    serveFile(res, homePath);
-  } else if (pathname === '/project.html') {
-    const projectPath = path.join(__dirname, 'project.html');
-    serveFile(res, projectPath);
-  } else if (pathname === '/registration.html') {
-    const registrationPath = path.join(__dirname, 'registration.html');
-    serveFile(res, registrationPath);
-  } else if (pathname === '/favicon.ico') {
-    // Ignore requests for favicon.ico
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Not Found');
-  } else {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Not Found');
-  }
+const args = require("minimist")(process.argv.slice(2), {
+  default: {
+    port: 3000,
+  },
 });
 
-function serveFile(res, filePath) {
-  fs.readFile(filePath, 'utf8', (err, data) => {
-    if (err) {
-      console.error(`Error reading file at path: ${filePath}`);
-      console.error(err);  // Log the detailed error
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('Internal Server Error');
-    } else {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(data);
+let homeContent = "";
+let projectContent = "";
+let registrationContent = "";
+
+fs.readFile("home.html", (err, home) => {
+  if (err) throw err;
+
+  homeContent = home;
+});
+
+fs.readFile("project.html", (err, project) => {
+  if (err) throw err;
+
+  projectContent = project;
+});
+
+fs.readFile("registration.html", (err, registration) => {
+  if (err) throw err;
+
+  registrationContent = registration;
+});
+
+http
+  .createServer((req, res) => {
+    let url = req.url;
+    res.writeHeader(200, { "content-Type": "text/html" });
+    switch (url) {
+      case "/project":
+        res.write(projectContent);
+        res.end();
+        break;
+
+      case "/registration":
+        res.write(registrationContent);
+        res.end();
+        break;
+
+      default:
+        res.write(homeContent);
+        res.end();
+        break;
     }
+  })
+  .listen(args.port, function () {
+    console.log("Application running on port : " + args.port);
   });
-}
-
-const port = argv.port || 5000;
-
-server.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
-});
